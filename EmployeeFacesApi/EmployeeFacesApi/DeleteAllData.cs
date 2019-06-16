@@ -33,6 +33,8 @@ namespace EmployeeFacesApi
                 await faceClient.PersonGroupPerson.DeleteAsync(personGroupId, personGroupPerson.PersonId);
             }
 
+            await faceClient.PersonGroup.TrainAsync(personGroupId);
+
             return (ActionResult)new OkObjectResult($"All data deleted");
         }
     }

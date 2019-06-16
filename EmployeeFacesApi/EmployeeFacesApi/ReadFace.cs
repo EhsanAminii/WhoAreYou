@@ -20,14 +20,16 @@ namespace EmployeeFacesApi
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            var content = await req.Content.ReadAsStreamAsync();
-
+            var picture = await req.Content.ReadAsStreamAsync();
             var subscriptionKey = Environment.GetEnvironmentVariable("subscriptionkey");
-            var faceEndpoint = "https://westeurope.api.cognitive.microsoft.com";
-            FaceClient faceClient = new FaceClient(new ApiKeyServiceClientCredentials(subscriptionKey), new DelegatingHandler[] { });
-            faceClient.Endpoint = faceEndpoint;
+            var faceEndpoint = Environment.GetEnvironmentVariable("faceEndpoint");
 
-            var result = await faceClient.Face.DetectWithStreamAsync(content);
+            FaceClient faceClient = new FaceClient(
+                    new ApiKeyServiceClientCredentials(subscriptionKey),
+                    new System.Net.Http.DelegatingHandler[] { })
+            { Endpoint = faceEndpoint };
+
+            var result = await faceClient.Face.DetectWithStreamAsync(picture);
 
             return new OkObjectResult(result);
         }
