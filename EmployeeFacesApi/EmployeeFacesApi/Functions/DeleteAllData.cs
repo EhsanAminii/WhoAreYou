@@ -1,41 +1,41 @@
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
-using EmployeeFacesApi.RequestModel;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.CognitiveServices.Vision.Face;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
-namespace EmployeeFacesApi
+namespace EmployeeFacesApi.Functions
 {
-    public static class IdentifyPersonFace
+    public static class DeleteAllData
     {
-        [FunctionName("IdentifyPersonFace")]
+        [FunctionName("DeleteAllData")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
-
-            var requestData = await req.Content.ReadAsStringAsync();
-            var identifyRequestMessage = JsonConvert.DeserializeObject<IdentifyRequestModel>(requestData);
-
             var subscriptionKey = Environment.GetEnvironmentVariable("subscriptionkey");
             var faceEndpoint = Environment.GetEnvironmentVariable("faceEndpoint");
+            var personGroupId = Environment.GetEnvironmentVariable("personGroupId");
 
             FaceClient faceClient = new FaceClient(
                 new ApiKeyServiceClientCredentials(subscriptionKey),
                 new System.Net.Http.DelegatingHandler[] { });
             faceClient.Endpoint = faceEndpoint;
 
-            var result = await faceClient.Face.IdentifyAsync(
-                identifyRequestMessage.faceIds,
-                identifyRequestMessage.personGroupId);
+            var personGroupPersons = await faceClient.PersonGroupPerson.ListAsync(personGroupId);
 
-            return (ActionResult)new OkObjectResult(result);
+            foreach (var personGroupPerson in personGroupPersons)
+            {
+                await faceClient.PersonGroupPerson.DeleteAsync(personGroupId, personGroupPerson.PersonId);
+            }
+
+            await faceClient.PersonGroup.TrainAsync(personGroupId);
+
+            return (ActionResult)new OkObjectResult($"All data deleted");
         }
     }
 }
